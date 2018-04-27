@@ -1,0 +1,86 @@
+/* 
+ * Copyright 2010 Aalto University, ComNet
+ * Released under GPLv3. See LICENSE.txt for details. 
+ */
+package report;
+
+import java.util.HashSet;
+import java.util.List;
+
+import core.DTNHost;
+import core.Settings;
+import core.SimError;
+import core.UpdateListener;
+
+/**
+ * Node energy level report. Reports the energy level of all (or only some) 
+ * nodes every configurable-amount-of seconds. Writes reports only after
+ * the warmup period.
+ */
+public class OnOffReport extends Report implements UpdateListener {
+	/** Reporting granularity -setting id ({@value}). 
+	 * Defines the interval how often (seconds) a new snapshot of energy levels*/
+          public static final String GRANULARITY = "granularity";
+	  protected final int granularity;
+	  protected double lastUpdate; 
+	  protected double hostTemp[];
+          protected double hostonoff[];
+       public  OnOffReport() {
+                 Settings settings = getSettings();
+		this.lastUpdate = 0;	
+		this.granularity = settings.getInt(GRANULARITY);
+		init();
+                              }
+public void updated(List<DTNHost> hosts) {
+		if(getSimTime()==0.0){
+		hostTemp=new double[hosts.size()];
+		int i=0;
+		Settings s = new Settings();
+			for (DTNHost h : hosts) {
+				hostTemp[i]=s.getDouble("initialEnergy");
+                              hostonoff[i]=0;
+				i++;
+			}
+		}
+
+		double simTime = getSimTime();
+		if (isWarmup()) {
+			return; /* warmup period is on */
+		}
+		/* creates a snapshot once every granularity seconds */
+		if (simTime - lastUpdate >= granularity) {
+			createSnapshot(hosts);
+			
+			int i=0;
+			for (DTNHost h : hosts) {
+				hostTemp[i]=h.getEnergy();
+                                hostonoff[i]=h.getOnOff(); //kashi
+				i++;
+			}
+			this.lastUpdate = simTime - simTime % granularity;
+		}
+	}
+private void createSnapshot(List<DTNHost> hosts) {
+			
+
+		//write ("[" + (int)getSimTime() + "]"); /* simulation time stamp */
+		int i=0;
+		for (DTNHost h : hosts) {
+			//if (this.reportedNodes != null && 
+			//	!this.reportedNodes.contains(h.getAddress())) {........
+			//	continue; /* node not in the list */
+			//}
+			Double value = (Double)h.getEnergy();
+			if (value == null) {
+				throw new SimError("Host " + h + 
+						" is not using energy model");
+			}
+		//Aman Singh Code
+			write((getSimTime()/60)+ " " +h.toString()+" "+(format(hostonoff[i])));
+			//System.out.println(((float)(getSimTime()/3600))+ " " +(h.toString().substring(1)) + " " +  format(value)+ " **" + format(hostTemp[i]) + " **" + (format(hostTemp[i]-value));
+			i++;
+		}
+	
+	}
+
+}

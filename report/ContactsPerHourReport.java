@@ -6,11 +6,14 @@ package report;
 
 import java.util.Iterator;
 import java.util.LinkedList;
-
+import java.util.ArrayList;
 import core.ConnectionListener;
 import core.DTNHost;
 import core.SimClock;
-
+import core.Connection;
+import java.util.List;
+import core.SimError;
+import core.UpdateListener;
 /**
  * This report counts the number of contacts each hour
  * 
@@ -33,22 +36,44 @@ public class ContactsPerHourReport extends Report implements ConnectionListener 
 	}
 	
 	public void hostsConnected(DTNHost host1, DTNHost host2) {
-		int time = SimClock.getIntTime() / 3600;
+		
+		
+		int time = SimClock.getIntTime()/3600;
+		
+		//int time = SimClock.getIntTime();
 		while (Math.floor(time) > currentHour) {
 			contactCounts.add(new Integer(currentHourCount));
 			currentHourCount = 0;
 			currentHour++;
-		} 
+	//System.out.println(time+"......."+id1+".........."+id2);			
+		}
+		//} 
 		
 		currentHourCount++;
+	
 	}
 
 	public void hostsDisconnected(DTNHost host1, DTNHost host2) {
 		// Do nothing
 	}
 
+
+
+
+	
+
+
+
 	public void done() {
 		Iterator<Integer> iterator = contactCounts.iterator();
+//my code anindita-2/07/15
+		//List<DTNHost> host =new ArrayList<DTNHost>();
+		//int i=0;
+		//for (DTNHost h : hosts) {
+
+			
+	//my code end
+		
 		int hour = 0;
 		while (iterator.hasNext()) {
 			Integer count = (Integer)iterator.next();
@@ -57,5 +82,5 @@ public class ContactsPerHourReport extends Report implements ConnectionListener 
 		}
 		super.done();
 	}
-	
+	//}
 }

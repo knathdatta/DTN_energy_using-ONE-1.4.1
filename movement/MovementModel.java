@@ -6,7 +6,10 @@ package movement;
 
 import java.util.Random;
 
+import util.ActivenessHandler;
+
 import core.Coord;
+import core.DTNHost;
 import core.DTNSim;
 import core.ModuleCommunicationBus;
 import core.Settings;
@@ -44,6 +47,9 @@ public abstract class MovementModel {
 	
 	/** common rng for all movement models in the simulation */
 	protected static Random rng; 
+	
+	/** DTNHost to which this movement model is attached */
+	protected DTNHost host;
 	
 	private ActivenessHandler ah;
 		
@@ -171,7 +177,9 @@ public abstract class MovementModel {
 		if (rng == null) {
 			return 1;
 		}
+		
 		return (maxSpeed - minSpeed) * rng.nextDouble() + minSpeed;
+		
 	}
 	
 	/**
@@ -204,10 +212,25 @@ public abstract class MovementModel {
 	public abstract Coord getInitialLocation();
 	
 	/**
+	 * @return the host
+	 */
+	public DTNHost getHost() {
+		return host;
+	}
+
+	/**
+	 * @param host the host to set
+	 */
+	public void setHost(DTNHost host) {
+		this.host = host;
+	}
+
+	/**
 	 * Returns true if this node is active at the moment (false if not)
 	 * @return true if this node is active (false if not)
 	 */
 	public boolean isActive() {
+		/* TODO: add offset support */
 		return ah.isActive();
 	}
 		

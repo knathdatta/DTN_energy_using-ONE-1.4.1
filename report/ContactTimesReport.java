@@ -11,6 +11,7 @@ import core.ConnectionListener;
 import core.DTNHost;
 import core.Settings;
 
+import core.SimClock;
 /**
  * Reports the node contact time (i.e., how long they were in the range
  * of each other) distribution. Report file contains the count of connections
@@ -115,7 +116,8 @@ public class ContactTimesReport extends Report implements ConnectionListener {
 			}
 			//     time(interval)             nrofContacts
 			write((i*this.granularity) + " " + contacts);
-		}
+		//write((float)(SimClock.getTime()/this.granularity) + " " + contacts);
+			}
 		
 		super.done();
 	}
@@ -135,6 +137,8 @@ public class ContactTimesReport extends Report implements ConnectionListener {
 			this.h2 = h2;
 			this.startTime = getSimTime();
 			this.endTime = -1;
+				
+
 		}
 		
 		/**
@@ -144,6 +148,7 @@ public class ContactTimesReport extends Report implements ConnectionListener {
 		 */
 		public void connectionEnd() {
 			this.endTime = getSimTime();
+			//System.out.println(this.endTime+" "+h1.toString()+" "+h2.toString()+ "	"+getConnectionTime());
 		}
 		
 		/**
@@ -160,7 +165,10 @@ public class ContactTimesReport extends Report implements ConnectionListener {
 			}			
 			else {
 				return this.endTime - this.startTime;
+			
 			}
+		
+		//;
 		}
 		
 		/**
@@ -208,6 +216,10 @@ public class ContactTimesReport extends Report implements ConnectionListener {
 		public String toString() {
 			return this.h1 + "<->" + this.h2 + " [" + this.startTime
 				+"-"+ (this.endTime >0 ? this.endTime : "n/a") + "]";
-		}
+				
+			//return this.h1 + "<->" + this.h2 + "\n";
+			
+	
+	}
 	}
 }
