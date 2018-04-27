@@ -1,17 +1,18 @@
-/* 
+/*
  * Copyright 2010 Aalto University, ComNet
- * Released under GPLv3. See LICENSE.txt for details. 
+ * Released under GPLv3. See LICENSE.txt for details.
  */
 package core;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 
 import movement.MovementModel;
 import movement.Path;
 import routing.MessageRouter;
-import routing.RoutingInfo;
+import routing.util.RoutingInfo;
 
 /**
  * A DTN capable host.
@@ -34,6 +35,47 @@ public class DTNHost implements Comparable<DTNHost> {
 	private List<NetworkInterface> net;
 	private ModuleCommunicationBus comBus;
 
+//AmanSingh Code
+	public int energyflag=0;
+	function fun=new function();
+	//ranfunction ranfun=new ranfunction();
+	public int ranflag=0;
+	public double energy=10;
+	public double transferLoss=0;
+	public double recieverLoss=0;
+	public boolean wakeupState=true;
+	public double offTime=1;
+	public double wakeupTime=1;
+	public double nextTimeToScan=0;
+	private double lastScanTime=0;
+	public double scannerLoss=0;
+	private boolean flag=false;
+	public double energyCounter=10;
+	private boolean reported=false;
+	public int relayCount=0;
+	public String modname;
+	private String gId;
+	public double node1Time=0;
+	public double node2Time=0;
+	public double node3Time=0;
+	public double node4Time=0;
+	public double node5Time=0;
+	public int R1,R2,R3,R4,R5;
+	public int flag0=0;
+	public double Nodeflag=-1;
+        public double gridcount=1;
+	public int flag2=-1;
+        public int flag3=-1;
+	public int flag4=-1;
+	public int flag5=-1;
+        public int R=0;
+         //$$$
+        public double received_energy=0;
+        public double transmitted_energy=0;
+       // public String ON;
+       // public String OFF;
+//AmanSingh Code
+
 	static {
 		DTNSim.registerForReset(DTNHost.class.getCanonicalName());
 		reset();
@@ -51,22 +93,59 @@ public class DTNHost implements Comparable<DTNHost> {
 	public DTNHost(List<MessageListener> msgLs,
 			List<MovementListener> movLs,
 			String groupId, List<NetworkInterface> interf,
-			ModuleCommunicationBus comBus, 
+			ModuleCommunicationBus comBus,
 			MovementModel mmProto, MessageRouter mRouterProto) {
 		this.comBus = comBus;
 		this.location = new Coord(0,0);
 		this.address = getNextAddress();
 		this.name = groupId+address;
 		this.net = new ArrayList<NetworkInterface>();
-
+		this.modname = groupId+address;
 		for (NetworkInterface i : interf) {
 			NetworkInterface ni = i.replicate();
 			ni.setHost(this);
 			net.add(ni);
-		}	
+
+		//AmanSingh Code
+
+		Settings s = new Settings();
+		this.gId = groupId;
+		if (s.contains("offTime"))
+		this.offTime = s.getDouble("offTime");
+		if (s.contains("WakeUpTime"))
+		this.wakeupTime = s.getDouble("WakeUpTime");
+		if (s.contains("initialEnergy"))
+		this.energy = s.getDouble("initialEnergy");
+		if (s.contains("scannerLoss"))
+		this.scannerLoss = s.getDouble("scannerLoss");
+		if (s.contains("transferLoss"))
+		this.transferLoss = s.getDouble("transferLoss");
+		if (s.contains("recieverLoss"))
+		this.recieverLoss = s.getDouble("recieverLoss");
+		this.energyCounter = s.getDouble("initialEnergy");
+
+ //$$$
+        this.received_energy = received_energy;
+        this.transmitted_energy =  transmitted_energy;
+
+
+
+
+	//if(flag1==0){
+		
+		//R2=(int)(Math.random()*10);
+		//R3=(int)(Math.random()*10);
+		//R4=(int)(Math.random()*6);
+		//R5=(int)(Math.random()*6);
+               
+		//flag1=1;
+	//}
+
+		//AmanSingh Code................................................
+
+		}
 
 		// TODO - think about the names of the interfaces and the nodes
-		//this.name = groupId + ((NetworkInterface)net.get(1)).getAddress();
 
 		this.msgListeners = msgLs;
 		this.movListeners = movLs;
@@ -74,6 +153,7 @@ public class DTNHost implements Comparable<DTNHost> {
 		// create instances by replicating the prototypes
 		this.movement = mmProto.replicate();
 		this.movement.setComBus(comBus);
+		this.movement.setHost(this);
 		setRouter(mRouterProto.replicate());
 
 		this.location = movement.getInitialLocation();
@@ -87,14 +167,14 @@ public class DTNHost implements Comparable<DTNHost> {
 			}
 		}
 	}
-	
+
 	/**
 	 * Returns a new network interface address and increments the address for
 	 * subsequent calls.
 	 * @return The next address.
 	 */
 	private synchronized static int getNextAddress() {
-		return nextAddress++;	
+		return nextAddress++;
 	}
 
 	/**
@@ -105,11 +185,27 @@ public class DTNHost implements Comparable<DTNHost> {
 	}
 
 	/**
-	 * Returns true if this node is active (false if not)
-	 * @return true if this node is active (false if not)
+	 * Returns true if this node is actively moving (false if not)
+	 * @return true if this node is actively moving (false if not)
 	 */
-	public boolean isActive() {
+	public boolean isMovementActive() {
 		return this.movement.isActive();
+	}
+
+
+	/**
+	 * Returns true if this node's radio is active (false if not)
+	 * @return true if this node's radio is active (false if not)
+	 */
+	public boolean isRadioActive() {
+//AmanSingh Code
+		if(this.wakeupState){
+		/* TODO: make this work for multiple interfaces */
+		return this.getInterface(1).isActive();
+		}
+		else
+		return false;
+//AmanSingh Code...............
 	}
 
 	/**
@@ -135,7 +231,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	public int getAddress() {
 		return this.address;
 	}
-	
+
 	/**
 	 * Returns this hosts's ModuleCommunicationBus
 	 * @return this hosts's ModuleCommunicationBus
@@ -143,7 +239,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	public ModuleCommunicationBus getComBus() {
 		return this.comBus;
 	}
-	
+
     /**
 	 * Informs the router of this host about state change in a connection
 	 * object.
@@ -151,6 +247,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	 */
 	public void connectionUp(Connection con) {
 		this.router.changedConnection(con);
+
 	}
 
 	public void connectionDown(Connection con) {
@@ -172,7 +269,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	}
 
 	/**
-	 * Returns the current location of this host. 
+	 * Returns the current location of this host.
 	 * @return The location
 	 */
 	public Coord getLocation() {
@@ -188,7 +285,6 @@ public class DTNHost implements Comparable<DTNHost> {
 		return this.path;
 	}
 
-
 	/**
 	 * Sets the Node's location overriding any location set by movement model
 	 * @param location The location to set
@@ -203,6 +299,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	 */
 	public void setName(String name) {
 		this.name = name;
+		this.modname = name;
 	}
 
 	/**
@@ -223,7 +320,7 @@ public class DTNHost implements Comparable<DTNHost> {
 
 	/**
 	 * Returns the buffer occupancy percentage. Occupancy is 0 for empty
-	 * buffer but can be over 100 if a created message is bigger than buffer 
+	 * buffer but can be over 100 if a created message is bigger than buffer
 	 * space that could be freed.
 	 * @return Buffer occupancy percentage
 	 */
@@ -251,13 +348,13 @@ public class DTNHost implements Comparable<DTNHost> {
 	/**
 	 * Find the network interface based on the index
 	 */
-	protected NetworkInterface getInterface(int interfaceNo) {
+	public NetworkInterface getInterface(int interfaceNo) {
 		NetworkInterface ni = null;
 		try {
 			ni = net.get(interfaceNo-1);
 		} catch (IndexOutOfBoundsException ex) {
-			System.out.println("No such interface: "+interfaceNo);
-			System.exit(0);
+			throw new SimError("No such interface: "+interfaceNo +
+					" at " + this);
 		}
 		return ni;
 	}
@@ -271,13 +368,13 @@ public class DTNHost implements Comparable<DTNHost> {
 				return ni;
 			}
 		}
-		return null;	
+		return null;
 	}
 
 	/**
 	 * Force a connection event
 	 */
-	public void forceConnection(DTNHost anotherHost, String interfaceId, 
+	public void forceConnection(DTNHost anotherHost, String interfaceId,
 			boolean up) {
 		NetworkInterface ni;
 		NetworkInterface no;
@@ -291,11 +388,11 @@ public class DTNHost implements Comparable<DTNHost> {
 		} else {
 			ni = getInterface(1);
 			no = anotherHost.getInterface(1);
-			
-			assert (ni.getInterfaceType().equals(no.getInterfaceType())) : 
+
+			assert (ni.getInterfaceType().equals(no.getInterfaceType())) :
 				"Interface types do not match.  Please specify interface type explicitly";
 		}
-		
+
 		if (up) {
 			ni.createConnection(no);
 		} else {
@@ -318,16 +415,210 @@ public class DTNHost implements Comparable<DTNHost> {
 	 * @param simulateConnections Should network layer be updated too
 	 */
 	public void update(boolean simulateConnections) {
-		if (!isActive()) {
-			return;
+// AmanSingh Code
+
+	 if(this.ranflag==0)
+                    {  Random rn = new Random();
+	                this.R = rn.nextInt(10);
+			//System.out.println(",,,,,,,,,,,,,,,");
+                       // System.out.println(R);
+                        this.ranflag=1;
+                      }
+	if(this.energy>0)
+	   {   
+                
+
+		double time=SimClock.getTime();
+                
+	
+	if(time>=this.nextTimeToScan)
+		{        
+				
+				
+				        
+					if(this.nextTimeToScan<this.R)
+						{//System.out.println(nextTimeToScan);
+                                                  
+						     this.Nodeflag=0;
+						     this.wakeupState=false;	
+                                                    //  System.out.println(Nodeflag);
+                                                     
+                                                     }
+					
+					else 
+					    { this.Nodeflag=1; 
+								if(this.R==0||this.R==1||this.R==2||this.R==7||this.R==8)
+                                                                  	{	if(this.Nodeflag==1 && this.gridcount<5)
+                                                                     		{
+                                                                     			if(fun.function(this.gridcount))
+												{
+										  			 this.wakeupState=true;
+													//System.out.println("%%%%%%%%%%%%%%%%%");
+													//System.out.println(this.R);
+                                                                                   			//System.out.println(gridcount); 	
+                                                                                   			this.gridcount=this.gridcount+1;
+										   	
+                                                                                      
+												}
+											else
+												{
+										
+												this.wakeupState=false;
+                                                                                       		this.gridcount=this.gridcount+1;
+								
+                                                                     				}
+                                                                     		}
+									
+                                                          			else 
+                                                            			   {
+											this.gridcount=1;
+										     } 
+									}
+
+
+								if(this.R==3||this.R==4||this.R==5||this.R==6||this.R==9)
+                                                                  	{	if(this.Nodeflag==1 && this.gridcount<5)
+                                                                     		{
+                                                                     			if(fun.function1(this.gridcount))
+												{
+										  			 this.wakeupState=true;
+													//System.out.println(".............");
+													//System.out.println(this.R);
+                                                                                   			//System.out.println(gridcount); 	
+                                                                                   			this.gridcount=this.gridcount+1;
+										   	
+                                                                                      
+												}
+											else
+												{
+										
+												this.wakeupState=false;
+                                                                                       		this.gridcount=this.gridcount+1;
+								
+                                                                     				}
+                                                                     		}
+									
+                                                          			else 
+                                                            			   {
+											this.gridcount=1;
+										     } 
+									}
+            
+
+            
+
+                                          }					
+								
+
+
+
+
+
+					  
+					
+								//if(this.Nodeflag==8){//System.out.println(this.Nodeflag);
+								//	this.Nodeflag=1;
+								//}
+						
+
+
+			if(this.wakeupState==true){
+				this.nextTimeToScan=this.nextTimeToScan+wakeupTime;
+                                  // System.out.println(nextTimeToScan);
+			}
+			else{
+				this.nextTimeToScan=this.nextTimeToScan+offTime;
+				//System.out.println(nextTimeToScan);
+			}
+
 		}
+
+	}
+	else
+	{
+		if(!this.reported)
+		{
+			this.reported=true;
+		}
+
+	this.wakeupState=false;
+	}
+	//code end for wakeup management
+
+	//code to reduce scan energy
+	flag=false;
+	List<Connection> con=this.getConnections();
+	for (Connection c : con){
+		if(c.isTransferring())
+		{
+
+		this.flag=true;
+		break;
+
+		}
+	}
+	if(this.wakeupState && (!this.flag))
+	this.energy=this.energy-(scannerLoss*wakeupTime);
+	//AmanSingh Code....................
+
+
+			if (!isRadioActive()) {
+				// Make sure inactive nodes don't have connections
+				tearDownAllConnections();
+				return;
+			}
+
+			if (simulateConnections) {
+				for (NetworkInterface i : net) {
+					i.update();
+				}
+			}
+			this.router.update();
+
+	}
+
+	/**
+	 * Tears down all connections for this host.
+	 */
+
+//AmanSingh Code
+	    public double getEnergy(){
+		return this.energy;
+		}
+		//$$$
+		public double receivedEnergy()
+		{//System.out.println(received_energy);
+		return this.received_energy;
+		//System.out.println("@@@@@@");
 		
-		if (simulateConnections) {
-			for (NetworkInterface i : net) {
-				i.update();
+		}
+		public double transmittedEnergy(){
+		return this.transmitted_energy;
+		}
+//kashi
+	//public int getOnOff(){
+             //if( this.wakeupState=true)
+                       //{return 1;}
+            //else 
+		//return 0;
+		//}
+//AmanSingh Code................
+	private void tearDownAllConnections() {
+		for (NetworkInterface i : net) {
+			// Get all connections for the interface
+			List<Connection> conns = i.getConnections();
+			if (conns.size() == 0) continue;
+
+			// Destroy all connections
+			List<NetworkInterface> removeList =
+				new ArrayList<NetworkInterface>(conns.size());
+			for (Connection con : conns) {
+				removeList.add(con.getOtherInterface(i));
+			}
+			for (NetworkInterface inf : removeList) {
+				i.destroyConnection(inf);
 			}
 		}
-		this.router.update();
 	}
 
 	/**
@@ -335,13 +626,13 @@ public class DTNHost implements Comparable<DTNHost> {
 	 * not time to move yet
 	 * @param timeIncrement How long time the node moves
 	 */
-	public void move(double timeIncrement) {		
+	public void move(double timeIncrement) {
 		double possibleMovement;
 		double distance;
 		double dx, dy;
 
-		if (!isActive() || SimClock.getTime() < this.nextTimeToMove) {
-			return; 
+		if (!isMovementActive() || SimClock.getTime() < this.nextTimeToMove) {
+			return;
 		}
 		if (this.destination == null) {
 			if (!setNextWaypoint()) {
@@ -368,7 +659,7 @@ public class DTNHost implements Comparable<DTNHost> {
 		dy = (possibleMovement/distance) * (this.destination.getY() -
 				this.location.getY());
 		this.location.translate(dx, dy);
-	}	
+	}
 
 	/**
 	 * Sets the next destination and speed to correspond the next waypoint
@@ -412,17 +703,17 @@ public class DTNHost implements Comparable<DTNHost> {
 	 * Start receiving a message from another host
 	 * @param m The message
 	 * @param from Who the message is from
-	 * @return The value returned by 
+	 * @return The value returned by
 	 * {@link MessageRouter#receiveMessage(Message, DTNHost)}
 	 */
 	public int receiveMessage(Message m, DTNHost from) {
-		int retVal = this.router.receiveMessage(m, from); 
+		int retVal = this.router.receiveMessage(m, from);
 
 		if (retVal == MessageRouter.RCV_OK) {
 			m.addNodeOnPath(this);	// add this node on the messages path
 		}
 
-		return retVal;	
+		return retVal;
 	}
 
 	/**
@@ -460,7 +751,11 @@ public class DTNHost implements Comparable<DTNHost> {
 	 * @param m The message to create
 	 */
 	public void createNewMessage(Message m) {
-		this.router.createNewMessage(m);
+		if(this.getEnergy() > 0)
+	//System.out.println("Current host in DTNHost"+this.toString());
+	//System.out.println("Router information " + this.router.toString());
+			this.router.createNewMessage(m);
+
 	}
 
 	/**

@@ -708,3 +708,11 @@ transimsParser can convert TRANSIM's (http://transims-opensource.net/) vehicle
 snapshot files to external movement files that can be used as an input for 
 node movement. See ExternalMovement and ExternalMovementReader classes for 
 more information.
+Energy module 
+_________________
+
+*Modify and add code core\DTN2Manager.java: Activate and de-activate the node interface according protocols in asynchronous mode.
+*Add one file core\function.java: wake-up patteren of a given protocol.
+*Modify and add code routing\ActiveRouter.java: TO calculate transmission and received energy for data transmission of the node.
+*Add one file report\EnergyLevelReport.java: To calculate enery status of a node in every hours.
+*Modify default_settings.txt: Message generation interval is changed to change network load.  

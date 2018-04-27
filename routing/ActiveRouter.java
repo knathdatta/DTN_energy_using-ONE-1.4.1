@@ -3,24 +3,26 @@
  * Released under GPLv3. See LICENSE.txt for details. 
  */
 package routing;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
+//import routing.util.EnergyModel;
+import routing.util.MessageTransferAcceptPolicy;
+import routing.util.RoutingInfo;
+import util.Tuple;
 import core.Connection;
 import core.DTNHost;
 import core.Message;
 import core.MessageListener;
+import core.NetworkInterface;
 import core.Settings;
 import core.SimClock;
-import core.Tuple;
 
 /**
  * Superclass of active routers. Contains convenience methods (e.g. 
- * {@link #getOldestMessage(boolean)}) and watching of sending connections (see
+ * {@link #getNextMessageToRemove(boolean)}) and watching of sending connections (see
  * {@link #update()}).
  */
 public abstract class ActiveRouter extends MessageRouter {
@@ -31,16 +33,19 @@ public abstract class ActiveRouter extends MessageRouter {
 	/** should messages that final recipient marks as delivered be deleted
 	 * from message buffer */
 	protected boolean deleteDelivered;
-	
+		
 	/** prefix of all response message IDs */
 	public static final String RESPONSE_PREFIX = "R_";
+	
 	/** how often TTL check (discarding old messages) is performed */
-	public static int TTL_CHECK_INTERVAL = 60;
+	private static int ttlCheckInterval = 60;
 	/** connection(s) that are currently used for sending */
 	protected ArrayList<Connection> sendingConnections;
 	/** sim time when the last TTL check was done */
 	private double lastTtlCheck;
 	
+	private MessageTransferAcceptPolicy policy;
+	//private EnergyModel energy;
 
 	/**
 	 * Constructor. Creates a new message router based on the settings in
@@ -50,12 +55,20 @@ public abstract class ActiveRouter extends MessageRouter {
 	public ActiveRouter(Settings s) {
 		super(s);
 		
-		if (s.contains(DELETE_DELIVERED_S)) {
-			this.deleteDelivered = s.getBoolean(DELETE_DELIVERED_S);
-		}
-		else {
-			this.deleteDelivered = false;
-		}
+		this.policy = new MessageTransferAcceptPolicy(s);
+		
+		this.deleteDelivered = s.getBoolean(DELETE_DELIVERED_S, false);
+		
+		/*if (s.contains(EnergyModel.INIT_ENERGY_S)) {
+			//this.energy = new EnergyModel(s);
+			this.energy= s.getString("initialEnergy");
+		} else {
+			this.energy = null; /* no energy model
+		}*/
+		
+		ttlCheckInterval = 
+				(new Settings().getBoolean(Message.TTL_SECONDS_S, false) 
+						? 1 : 60);
 	}
 	
 	/**
@@ -65,6 +78,8 @@ public abstract class ActiveRouter extends MessageRouter {
 	protected ActiveRouter(ActiveRouter r) {
 		super(r);
 		this.deleteDelivered = r.deleteDelivered;
+		this.policy = r.policy;
+		//this.energy = (r.energy != null ? r.energy.replicate() : null);
 	}
 	
 	@Override
@@ -72,14 +87,24 @@ public abstract class ActiveRouter extends MessageRouter {
 		super.init(host, mListeners);
 		this.sendingConnections = new ArrayList<Connection>(1);
 		this.lastTtlCheck = 0;
+
+
 	}
 	
 	/**
-	 * Called when a connection's state changes. This version doesn't do 
-	 * anything but subclasses may want to override this.
+	 * Called when a connection's state changes. If energy modeling is enabled,
+	 * and a new connection is created to this node, reduces the energy for the
+	 * device discovery (scan response) amount
+	 * @param @con The connection whose state changed
 	 */
 	@Override
-	public void changedConnection(Connection con) { }
+	public void changedConnection(Connection con) {
+		/*if (this.energy != null && con.isUp() && !con.isInitiator(getHost())) {
+			this.energy.reduceDiscoveryEnergy();
+		}*/
+
+
+	}
 	
 	@Override
 	public boolean requestDeliverableMessages(Connection con) {
@@ -107,10 +132,13 @@ public abstract class ActiveRouter extends MessageRouter {
 		makeRoomForNewMessage(m.getSize());
 		return super.createNewMessage(m);	
 	}
+
+
+
 	
 	@Override
 	public int receiveMessage(Message m, DTNHost from) {
-		int recvCheck = checkReceiving(m); 
+		int recvCheck = checkReceiving(m, from); 
 		if (recvCheck != RCV_OK) {
 			return recvCheck;
 		}
@@ -158,9 +186,13 @@ public abstract class ActiveRouter extends MessageRouter {
 	 */
 	protected int startTransfer(Message m, Connection con) {
 		int retVal;
-		
 		if (!con.isReadyForTransfer()) {
 			return TRY_LATER_BUSY;
+		}
+		
+		if (!policy.acceptSending(getHost(), 
+				con.getOtherNode(getHost()), con, m)) {
+			return MessageRouter.DENIED_POLICY;
 		}
 		
 		retVal = con.startTransfer(getHost(), m);
@@ -204,12 +236,13 @@ public abstract class ActiveRouter extends MessageRouter {
 	 * this router (as final recipient), or DENIED_NO_SPACE if the message
 	 * does not fit into buffer
 	 */
-	protected int checkReceiving(Message m) {
+	protected int checkReceiving(Message m, DTNHost from) {
 		if (isTransferring()) {
 			return TRY_LATER_BUSY; // only one connection at a time
 		}
 	
-		if ( hasMessage(m.getId()) || isDeliveredMessage(m) ){
+		if ( hasMessage(m.getId()) || isDeliveredMessage(m) ||
+				super.isBlacklistedMessage(m.getId())) {
 			return DENIED_OLD; // already seen this message -> reject it
 		}
 		
@@ -218,6 +251,14 @@ public abstract class ActiveRouter extends MessageRouter {
 			return DENIED_TTL; 
 		}
 
+		/*if (energy != null && energy.getEnergy() <= 0) {
+			return MessageRouter.DENIED_LOW_RESOURCES;
+		}*/
+		
+		if (!policy.acceptReceiving(from, getHost(), m)) {
+			return MessageRouter.DENIED_POLICY;
+		}
+		
 		/* remove oldest messages but not the ones being sent */
 		if (!makeRoomForMessage(m.getSize())) {
 			return DENIED_NO_SPACE; // couldn't fit into buffer -> reject
@@ -241,7 +282,7 @@ public abstract class ActiveRouter extends MessageRouter {
 		int freeBuffer = this.getFreeBufferSize();
 		/* delete messages from the buffer until there's enough space */
 		while (freeBuffer < size) {
-			Message m = getOldestMessage(true); // don't remove msgs being sent
+			Message m = getNextMessageToRemove(true); // don't remove msgs being sent
 
 			if (m == null) {
 				return false; // couldn't remove any more messages
@@ -290,7 +331,7 @@ public abstract class ActiveRouter extends MessageRouter {
 	 * (no messages in buffer or all messages in buffer are being sent and
 	 * exludeMsgBeingSent is true)
 	 */
-	protected Message getOldestMessage(boolean excludeMsgBeingSent) {
+	protected Message getNextMessageToRemove(boolean excludeMsgBeingSent) {
 		Collection<Message> messages = this.getMessageCollection();
 		Message oldest = null;
 		for (Message m : messages) {
@@ -496,11 +537,12 @@ public abstract class ActiveRouter extends MessageRouter {
 			return true; // sending something
 		}
 		
-		if (this.getHost().getConnections().size() == 0) {
+		List<Connection> connections = getConnections();
+		
+		if (connections.size() == 0) {
 			return false; // not connected
 		}
 		
-		List<Connection> connections = getConnections();
 		for (int i=0, n=connections.size(); i<n; i++) {
 			Connection con = connections.get(i);
 			if (!con.isReadyForTransfer()) {
@@ -530,14 +572,22 @@ public abstract class ActiveRouter extends MessageRouter {
 	}
 	
 	/**
+	 * Returns true if the node has energy left (i.e., energy modeling is
+	 * enabled OR (is enabled and model has energy left))
+	 * @return has the node energy
+	 */
+	/*public boolean hasEnergy() {
+		return this.energy == null || this.energy.getEnergy() > 0;
+	}*/
+	
+	/**
 	 * Checks out all sending connections to finalize the ready ones 
 	 * and abort those whose connection went down. Also drops messages
 	 * whose TTL <= 0 (checking every one simulated minute).
 	 * @see #addToSendingConnections(Connection)
 	 */
 	@Override
-	public void update() {
-		
+	public void update() {		
 		super.update();
 		
 		/* in theory we can have multiple sending connections even though
@@ -545,18 +595,45 @@ public abstract class ActiveRouter extends MessageRouter {
 		for (int i=0; i<this.sendingConnections.size(); ) {
 			boolean removeCurrent = false;
 			Connection con = sendingConnections.get(i);
-			
 			/* finalize ready transfers */
-			if (con.isMessageTransferred()) {
+//Lucifer	
+				if(con.isTransferring()) {
+				DTNHost to=con.getHost();
+				DTNHost from=con.getOtherNode(con.getHost());
+				if(!con.isSender(to))
+				{	to.energy=to.energy-to.recieverLoss*0.1;
+					//$$$
+					to.received_energy= to.received_energy + to.recieverLoss*0.1; 
+					from.energy=from.energy-from.transferLoss*0.1;
+					from.transmitted_energy=from.transmitted_energy +from.transferLoss*0.1;  
+				}
+				else
+				{	to.energy=to.energy-to.transferLoss*0.1;
+					//$$$
+					to.transmitted_energy=to.transmitted_energy +to.transferLoss*0.1;  
+					from.energy=from.energy-from.recieverLoss*0.1;
+					from.received_energy= from.received_energy + from.recieverLoss*0.1; 
+				}
+			}
+//Lucifer...............
+				if (con.isMessageTransferred()) {
 				if (con.getMessage() != null) {
+					DTNHost d1=con.getHost();
+					DTNHost d2=con.getOtherNode(d1);
+					d1.relayCount++;
+					d2.relayCount++;
 					transferDone(con);
 					con.finalizeTransfer();
-				} /* else: some other entity aborted transfer */
-				removeCurrent = true;
+				
+
+				}	removeCurrent = true;
 			}
 			/* remove connections that have gone down */
 			else if (!con.isUp()) {
+
+
 				if (con.getMessage() != null) {
+
 					transferAborted(con);
 					con.abortTransfer();
 				}
@@ -577,11 +654,17 @@ public abstract class ActiveRouter extends MessageRouter {
 		}
 		
 		/* time to do a TTL check and drop old messages? Only if not sending */
-		if (SimClock.getTime() - lastTtlCheck >= TTL_CHECK_INTERVAL && 
+		if (SimClock.getTime() - lastTtlCheck >= ttlCheckInterval && 
 				sendingConnections.size() == 0) {
 			dropExpiredMessages();
 			lastTtlCheck = SimClock.getTime();
 		}
+		
+		/*if (energy != null) {
+			/* TODO: add support for other interfaces 
+			NetworkInterface iface = getHost().getInterface(1);
+			energy.update(iface, getHost().getComBus());
+		}*/
 	}
 	
 	/**
@@ -599,5 +682,15 @@ public abstract class ActiveRouter extends MessageRouter {
 	 * @param con The connection whose transfer was finalized
 	 */
 	protected void transferDone(Connection con) { }
+	
+	@Override
+	public RoutingInfo getRoutingInfo() {
+		RoutingInfo top = super.getRoutingInfo();
+		/*if (energy != null) {
+			top.addMoreInfo(new RoutingInfo("Energy level: " + 
+					String.format("%.2f mAh", energy.getEnergy() / 3600)));
+		}*/
+		return top;
+	}
 	
 }
