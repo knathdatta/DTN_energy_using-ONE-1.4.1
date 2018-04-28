@@ -447,7 +447,7 @@ public class DTNHost implements Comparable<DTNHost> {
 					
 					else 
 					    { this.Nodeflag=1;
-                                                                  if(this.Nodeflag==1 && this.gridcount<22)
+                                                                  if(this.Nodeflag==1 && this.gridcount<14)
                                                                      {
                                                                      if(fun.function(this.gridcount))
 										{
