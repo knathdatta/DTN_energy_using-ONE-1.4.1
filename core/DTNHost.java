@@ -446,9 +446,9 @@ public class DTNHost implements Comparable<DTNHost> {
                                                      }
 					
 					else 
-					    {this.Nodeflag=1; 
-								if(this.R==0||this.R==9)
-                                                                  	{	if(this.Nodeflag==1 && this.gridcount<10)
+					    { this.Nodeflag=1; 
+								if(this.R==0)
+                                                                  	{	if(this.Nodeflag==1 && this.gridcount<17)
                                                                      		{
                                                                      			if(fun.function(this.gridcount))
 												{
@@ -477,7 +477,7 @@ public class DTNHost implements Comparable<DTNHost> {
 
 
 								if(this.R==1)
-                                                                  	{	if(this.Nodeflag==1 && this.gridcount<10)
+                                                                  	{	if(this.Nodeflag==1 && this.gridcount<17)
                                                                      		{
                                                                      			if(fun.function1(this.gridcount))
 												{
@@ -506,7 +506,7 @@ public class DTNHost implements Comparable<DTNHost> {
             
 							if(this.R==2)
                                                                   	
-								{	if(this.Nodeflag==1 && this.gridcount<10)
+								{	if(this.Nodeflag==1 && this.gridcount<17)
                                                                      		{
                                                                      			if(fun.function2(this.gridcount))
 												{
@@ -534,7 +534,7 @@ public class DTNHost implements Comparable<DTNHost> {
 									}
 
 							if(this.R==3)
-                                                                  {	if(this.Nodeflag==1 && this.gridcount<10)
+                                                                  {	if(this.Nodeflag==1 && this.gridcount<17)
                                                                      		{
                                                                      			if(fun.function3(this.gridcount))
 												{
@@ -562,7 +562,7 @@ public class DTNHost implements Comparable<DTNHost> {
 									}
 							if(this.R==4)
                                                                   	
-								{	if(this.Nodeflag==1 && this.gridcount<10)
+								{	if(this.Nodeflag==1 && this.gridcount<17)
                                                                      		{
                                                                      			if(fun.function4(this.gridcount))
 												{
@@ -591,7 +591,7 @@ public class DTNHost implements Comparable<DTNHost> {
 
 							if(this.R==5)
                                                                   	
-								{	if(this.Nodeflag==1 && this.gridcount<10)
+								{	if(this.Nodeflag==1 && this.gridcount<17)
                                                                      		{
                                                                      			if(fun.function5(this.gridcount))
 												{
@@ -620,7 +620,7 @@ public class DTNHost implements Comparable<DTNHost> {
 	
  							if(this.R==6)
                                                                   	
-								{	if(this.Nodeflag==1 && this.gridcount<10)
+								{	if(this.Nodeflag==1 && this.gridcount<17)
                                                                      		{
                                                                      			if(fun.function6(this.gridcount))
 												{
@@ -648,7 +648,7 @@ public class DTNHost implements Comparable<DTNHost> {
 									} 
 							if(this.R==7)
                                                                   	
-								{	if(this.Nodeflag==1 && this.gridcount<10)
+								{	if(this.Nodeflag==1 && this.gridcount<17)
                                                                      		{
                                                                      			if(fun.function7(this.gridcount))
 												{
@@ -676,7 +676,7 @@ public class DTNHost implements Comparable<DTNHost> {
 									}
 							if(this.R==8)
                                                                   	
-								{	if(this.Nodeflag==1 && this.gridcount<10)
+								{	if(this.Nodeflag==1 && this.gridcount<17)
                                                                      		{
                                                                      			if(fun.function8(this.gridcount))
 												{
@@ -702,15 +702,206 @@ public class DTNHost implements Comparable<DTNHost> {
 											this.gridcount=1;
 										     } 
 									}           
-           
- 							
-            
-
-            
-
-                                          }					
+  						if(this.R==9)
+                                                                  	
+								{	if(this.Nodeflag==1 && this.gridcount<17)
+                                                                     		{
+                                                                     			if(fun.function9(this.gridcount))
+												{
+										  			 this.wakeupState=true;
+													//System.out.println(".............");
+													//System.out.println(this.R);
+                                                                                   			//System.out.println(gridcount); 	
+                                                                                   			this.gridcount=this.gridcount+1;
+										   	
+                                                                                      
+												}
+											else
+												{
+										
+												this.wakeupState=false;
+                                                                                       		this.gridcount=this.gridcount+1;
 								
+                                                                     				}
+                                                                     		}
+									
+                                                          			else 
+                                                            			   {
+											this.gridcount=1;
+										     } 
+									}
+					if(this.R==10)
+                                                                  	
+								{	if(this.Nodeflag==1 && this.gridcount<17)
+                                                                     		{
+                                                                     			if(fun.function10(this.gridcount))
+												{
+										  			 this.wakeupState=true;
+													//System.out.println(".............");
+													//System.out.println(this.R);
+                                                                                   			//System.out.println(gridcount); 	
+                                                                                   			this.gridcount=this.gridcount+1;
+										   	
+                                                                                      
+												}
+											else
+												{
+										
+												this.wakeupState=false;
+                                                                                       		this.gridcount=this.gridcount+1;
+								
+                                                                     				}
+                                                                     		}
+									
+                                                          			else 
+                                                            			   {
+											this.gridcount=1;
+										     } 
+									}
+					if(this.R==11)
+                                                                  	
+								{	if(this.Nodeflag==1 && this.gridcount<17)
+                                                                     		{
+                                                                     			if(fun.function11(this.gridcount))
+												{
+										  			 this.wakeupState=true;
+													//System.out.println(".............");
+													//System.out.println(this.R);
+                                                                                   			//System.out.println(gridcount); 	
+                                                                                   			this.gridcount=this.gridcount+1;
+										   	
+                                                                                      
+												}
+											else
+												{
+										
+												this.wakeupState=false;
+                                                                                       		this.gridcount=this.gridcount+1;
+								
+                                                                     				}
+                                                                     		}
+									
+                                                          			else 
+                                                            			   {
+											this.gridcount=1;
+										     } 
+									}
+					if(this.R==12)
+                                                                  	
+								{	if(this.Nodeflag==1 && this.gridcount<17)
+                                                                     		{
+                                                                     			if(fun.function12(this.gridcount))
+												{
+										  			 this.wakeupState=true;
+													//System.out.println(".............");
+													//System.out.println(this.R);
+                                                                                   			//System.out.println(gridcount); 	
+                                                                                   			this.gridcount=this.gridcount+1;
+										   	
+                                                                                      
+												}
+											else
+												{
+										
+												this.wakeupState=false;
+                                                                                       		this.gridcount=this.gridcount+1;
+								
+                                                                     				}
+                                                                     		}
+									
+                                                          			else 
+                                                            			   {
+											this.gridcount=1;
+										     } 
+									}
+					if(this.R==13)
+                                                                  	
+								{	if(this.Nodeflag==1 && this.gridcount<17)
+                                                                     		{
+                                                                     			if(fun.function13(this.gridcount))
+												{
+										  			 this.wakeupState=true;
+													//System.out.println(".............");
+													//System.out.println(this.R);
+                                                                                   			//System.out.println(gridcount); 	
+                                                                                   			this.gridcount=this.gridcount+1;
+										   	
+                                                                                      
+												}
+											else
+												{
+										
+												this.wakeupState=false;
+                                                                                       		this.gridcount=this.gridcount+1;
+								
+                                                                     				}
+                                                                     		}
+									
+                                                          			else 
+                                                            			   {
+											this.gridcount=1;
+										     } 
+									}
+					if(this.R==14)
+                                                                  	
+								{	if(this.Nodeflag==1 && this.gridcount<17)
+                                                                     		{
+                                                                     			if(fun.function14(this.gridcount))
+												{
+										  			 this.wakeupState=true;
+													//System.out.println(".............");
+													//System.out.println(this.R);
+                                                                                   			//System.out.println(gridcount); 	
+                                                                                   			this.gridcount=this.gridcount+1;
+										   	
+                                                                                      
+												}
+											else
+												{
+										
+												this.wakeupState=false;
+                                                                                       		this.gridcount=this.gridcount+1;
+								
+                                                                     				}
+                                                                     		}
+									
+                                                          			else 
+                                                            			   {
+											this.gridcount=1;
+										     } 
+									}
+					if(this.R==15)
+                                                                  	
+								{	if(this.Nodeflag==1 && this.gridcount<17)
+                                                                     		{
+                                                                     			if(fun.function15(this.gridcount))
+												{
+										  			 this.wakeupState=true;
+													//System.out.println(".............");
+													//System.out.println(this.R);
+                                                                                   			//System.out.println(gridcount); 	
+                                                                                   			this.gridcount=this.gridcount+1;
+										   	
+                                                                                      
+												}
+											else
+												{
+										
+												this.wakeupState=false;
+                                                                                       		this.gridcount=this.gridcount+1;
+								
+                                                                     				}
+                                                                     		}
+									
+                                                          			else 
+                                                            			   {
+											this.gridcount=1;
+										     } 
+									}         
+ 							
+         
 
+                                          }	
 
 
 
